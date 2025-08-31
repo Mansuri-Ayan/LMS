@@ -1,6 +1,6 @@
 /** @format */
 require("dotenv").config();
-import { User } from "../model/user.model";
+import { IUser, User } from "../model/user.model";
 import ejs from "ejs";
 import { NextFunction, Request, Response } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
@@ -79,7 +79,22 @@ export const activateUser = async (
   next: NextFunction
 ) => {
   const { activation_token, activation_code } = req.body as IActiovationRequest;
-  
+  const newUser: { user: IUser; activationCode: string } = jwt.verify(
+    activation_token,
+    process.env.ACTIVATION_SECRET as Secret
+  ) as { user: IUser; activationCode: string };
+  if (newUser.activationCode !== activation_code) {
+    return next(new ErrorHandler("Invalid activation code", 400));
+  }
+  const { name, email, password } = newUser.user;
+  const existUser = await User.findOne({ email });
+  if (existUser) {
+    return next(new ErrorHandler("Email already exists.", 400));
+  }
+  const user = await User.create({ name, email, password });
+  res.status(200).json({
+    success: true,
+  });
 };
 
 // interface anynonymous {}
