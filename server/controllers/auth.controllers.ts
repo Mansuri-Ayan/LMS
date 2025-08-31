@@ -21,7 +21,7 @@ export const registrationUser = async (
 ) => {
   try {
     const { name, email, password } = req.body;
-    console.log(name,email);
+    console.log(name, email);
     const isExists = await User.findOne({ email });
     if (isExists) {
       return next(new ErrorHandler("User already exits", 400));
@@ -69,7 +69,20 @@ export const createActivationToken = (user: any): IActiovationtoken => {
   );
   return { token, activationCode };
 };
+interface IActiovationRequest {
+  activation_token: string;
+  activation_code: string;
+}
+export const activateUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { activation_token, activation_code } = req.body as IActiovationRequest;
+  
+};
 
+// interface anynonymous {}
 // export const registrationUser = async (
 //   req: Request,
 //   res: Response,
