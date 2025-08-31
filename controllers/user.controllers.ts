@@ -69,6 +69,7 @@ export const createActivationToken = (user: any): IActiovationtoken => {
   );
   return { token, activationCode };
 };
+
 // export const registrationUser = async (
 //   req: Request,
 //   res: Response,
