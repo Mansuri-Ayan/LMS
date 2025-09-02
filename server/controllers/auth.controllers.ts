@@ -97,6 +97,10 @@ export const activateUser = async (
   });
 };
 
+interface ILoginRequest {
+  email: string;
+  password: string;
+}
 // interface anynonymous {}
 // export const registrationUser = async (
 //   req: Request,

@@ -18,16 +18,15 @@ app.use(
     origin: process.env.ORIGIN,
   })
 );
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.info(`Method => ${req.method} || Route => ${req.url}`);
+  next();
+});
 
 app.use("/api/v1/", authRouter);
 
 app.get("/", (req: Request, res: Response, next: NextFunction) => {
   return res.status(200).json("working");
-});
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.info(`Method => ${req.method} || Route => ${req.url}`);
-  next();
 });
 
 app.all(/^(?!\/api).*/, (req: Request, res: Response, next: NextFunction) => {

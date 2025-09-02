@@ -1,7 +1,7 @@
 /** @format */
 
 import nodemailer, { Transporter } from "nodemailer";
-import ejs, { renderFile } from "ejs";
+import ejs from "ejs";
 import path from "path";
 interface EmailOptions {
   email: string;
@@ -21,7 +21,7 @@ const senEmail = async (options: EmailOptions): Promise<void> => {
     },
   });
   const { email, subject, template, data } = options;
-  console.log("here is your data",data);
+  console.log("here is your data", data);
   const tamplatePath = path.join(__dirname, "../mail", template);
   const html: string = await ejs.renderFile(tamplatePath, data);
   await transpoter.sendMail({
