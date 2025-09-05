@@ -49,9 +49,15 @@ const userSchema: Schema<IUser> = new Schema(
 );
 
 userSchema.pre<IUser>("save", async function (next) {
-  if (this.isModified("password")) return next;
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
+  if (!this.isModified("password")) return next;
+  try {
+    console.log(this.password);
+    this.password = await bcrypt.hash(this.password, 10);
+    console.log(this.password);
+    next();
+  } catch (error: any) {
+    next(error || "Error while hashing password");
+  }
 });
 
 userSchema.methods.signedAccessToken = async function () {

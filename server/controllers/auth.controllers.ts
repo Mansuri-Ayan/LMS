@@ -1,5 +1,4 @@
 /** @format */
-require("dotenv").config();
 import { IUser, User } from "../model/user.model";
 import ejs from "ejs";
 import { NextFunction, Request, Response } from "express";
@@ -7,6 +6,8 @@ import ErrorHandler from "../utils/ErrorHandler";
 import jwt, { Secret } from "jsonwebtoken";
 import path from "path";
 import senEmail from "../utils/sendMail";
+import { sendToken } from "../utils/jwt";
+
 interface IRegistrationbody {
   email: string;
   name: string;
@@ -62,6 +63,7 @@ interface IActiovationtoken {
 
 export const createActivationToken = (user: any): IActiovationtoken => {
   const activationCode = Math.floor(1000 + Math.random() * 9000).toString();
+  console.log(activationCode);
   const token = jwt.sign(
     { user, activationCode },
     process.env.ACTIVATION_SECRET as Secret,
@@ -91,7 +93,7 @@ export const activateUser = async (
   if (existUser) {
     return next(new ErrorHandler("Email already exists.", 400));
   }
-  const user = await User.create({ name, email, password });
+  const user = User.create({ name, email, password });
   res.status(200).json({
     success: true,
   });
@@ -101,6 +103,40 @@ interface ILoginRequest {
   email: string;
   password: string;
 }
+export const LoginUse = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password } = req.body as ILoginRequest;
+
+    if (!email || email === "") {
+      return next(new ErrorHandler("Please Enter Email.", 400));
+    }
+
+    if (!password || password === "") {
+      return next(new ErrorHandler("Please Enter Password.", 400));
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return next(new ErrorHandler("Invalid Email.", 400));
+    }
+    console.log(user);
+    const isMatch = await user.coparePassword(password);
+    console.log(isMatch);
+    if (!isMatch) {
+      return next(new ErrorHandler("Invalid Password.", 400));
+    }
+
+    sendToken(user, 200, res);
+  } catch (error: any) {
+    return next(new ErrorHandler(error.status, 400));
+  }
+};
+
 // interface anynonymous {}
 // export const registrationUser = async (
 //   req: Request,
