@@ -17,8 +17,10 @@ export const sendToken = async (
   res: Response
 ) => {
   try {
-    const accessToken = user.signedAccessToken();
-    const refereshTokenn = user.signedRefreshToken();
+    const accessToken = await user.signedAccessToken();
+    console.log(accessToken);
+    const refereshTokenn = await user.signedRefreshToken();
+    console.log(refereshTokenn);
     const accessTokenExpire = parseInt(
       process.env.ACCESS_TOKEN_EXPIRE || "300",
       10

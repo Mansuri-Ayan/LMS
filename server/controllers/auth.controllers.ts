@@ -109,6 +109,9 @@ export const LoginUse = async (
   next: NextFunction
 ) => {
   try {
+    if (req.cookies.access_token || req.cookies.refresh_token) {
+      return next(new ErrorHandler("User already Logedin.", 400));
+    }
     const { email, password } = req.body as ILoginRequest;
 
     if (!email || email === "") {
@@ -137,6 +140,38 @@ export const LoginUse = async (
   }
 };
 
+interface IClearCookis {
+  maxAge: number;
+  httpOnly: boolean;
+  sameSite: "lax" | "strict" | "none" | undefined;
+  secure?: boolean;
+}
+
+export const LogoutUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.cookies.access_token || !req.cookies.refresh_token) {
+      return next(new ErrorHandler("User already Logedin.", 400));
+    }
+    const clearCookieOptions: IClearCookis = {
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: 1,
+      secure: process.env.NODE_ENV === "production",
+    };
+    res.clearCookie("access_token", clearCookieOptions);
+    res.clearCookie("refresh_token", clearCookieOptions);
+    res
+      .status(200)
+      .json({ success: true, message: "User Logout Successfull." });
+  } catch (error: any) {
+    return next(new ErrorHandler(error.status, 400));
+  }
+};
+
 // interface anynonymous {}
 // export const registrationUser = async (
 //   req: Request,
@@ -145,6 +180,7 @@ export const LoginUse = async (
 // ) => {
 //   try {
 //   } catch (error: any) {
+
 //     return next(new ErrorHandler(error.status, 400));
 //   }
 // };
