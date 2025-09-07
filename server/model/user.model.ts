@@ -40,7 +40,7 @@ const userSchema: Schema<IUser> = new Schema(
     avatar: { public_id: String, url: String },
     role: {
       type: String,
-      default: "User",
+      default: "user",
     },
     isVerified: { type: Boolean, default: false },
     courses: [{ courseId: String }],
@@ -61,11 +61,15 @@ userSchema.pre<IUser>("save", async function (next) {
 });
 
 userSchema.methods.signedAccessToken = async function () {
-  return jwt.sign({ id: this.id }, process.env.ACCESS_TOKEN || "");
+  return jwt.sign({ id: this.id }, process.env.ACCESS_TOKEN || "", {
+    expiresIn: "5m",
+  });
 };
 
 userSchema.methods.signedRefreshToken = async function () {
-  return jwt.sign({ id: this.id }, process.env.REFRESSH_TOKEN || "");
+  return jwt.sign({ id: this.id }, process.env.REFRESSH_TOKEN || "", {
+    expiresIn: "3d",
+  });
 };
 
 userSchema.methods.coparePassword = async function (

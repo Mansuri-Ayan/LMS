@@ -3,10 +3,16 @@ import { IUser, User } from "../model/user.model";
 import ejs from "ejs";
 import { NextFunction, Request, Response } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
-import jwt, { Secret } from "jsonwebtoken";
+import jwt, { JwtPayload, Secret } from "jsonwebtoken";
 import path from "path";
 import senEmail from "../utils/sendMail";
-import { sendToken } from "../utils/jwt";
+import {
+  accessTokenOtions,
+  refereshTokenOtions,
+  sendToken,
+} from "../utils/jwt";
+import { redis } from "../utils/redis";
+import { getUserById } from "../services/user.services";
 
 interface IRegistrationbody {
   email: string;
@@ -109,9 +115,6 @@ export const LoginUse = async (
   next: NextFunction
 ) => {
   try {
-    if (req.cookies.access_token || req.cookies.refresh_token) {
-      return next(new ErrorHandler("User already Logedin.", 400));
-    }
     const { email, password } = req.body as ILoginRequest;
 
     if (!email || email === "") {
@@ -153,9 +156,6 @@ export const LogoutUser = async (
   next: NextFunction
 ) => {
   try {
-    if (!req.cookies.access_token || !req.cookies.refresh_token) {
-      return next(new ErrorHandler("User already Logedin.", 400));
-    }
     const clearCookieOptions: IClearCookis = {
       httpOnly: true,
       sameSite: "strict",
@@ -164,6 +164,8 @@ export const LogoutUser = async (
     };
     res.clearCookie("access_token", clearCookieOptions);
     res.clearCookie("refresh_token", clearCookieOptions);
+    const userId = req.user?._id as string;
+    await redis.del(userId);
     res
       .status(200)
       .json({ success: true, message: "User Logout Successfull." });
@@ -172,8 +174,73 @@ export const LogoutUser = async (
   }
 };
 
+export const updateAccessToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const refresh_token = req.cookies.refresh_token;
+    // const a = req.cookies.access_token;
+
+    const decocded = (await jwt.verify(
+      refresh_token,
+      process.env.REFRESSH_TOKEN as Secret
+    )) as JwtPayload;
+
+    if (!decocded) {
+      return next(new ErrorHandler("Could not refresh token", 400));
+    }
+
+    const session = await redis.get(decocded.id as string);
+
+    if (!session) {
+      return next(new ErrorHandler("Could not refresh token", 400));
+    }
+
+    const user = JSON.parse(session);
+
+    const accessToken = jwt.sign(
+      { _id: user._id },
+      process.env.ACCESS_TOKEN as Secret,
+      {
+        expiresIn: "5m",
+      }
+    );
+    const refereshToken = jwt.sign(
+      { _id: user._id },
+      process.env.ACCESS_TOKEN as Secret,
+      {
+        expiresIn: "3d",
+      }
+    );
+    res.cookie("access_token", accessToken, accessTokenOtions);
+    res.cookie("refresh_token", refereshToken, refereshTokenOtions);
+    res.status(200).json({
+      success: true,
+      accessToken,
+    });
+  } catch (error: any) {
+    return next(new ErrorHandler(error.status, 400));
+  }
+};
+
+export const getUserInfo = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    console.log(req.user);
+    const userId = req.user?._id as string;
+    getUserById(userId, res);
+  } catch (error: any) {
+    return next(new ErrorHandler(error.status, 400));
+  }
+};
+
 // interface anynonymous {}
-// export const registrationUser = async (
+// export const xyz = async (
 //   req: Request,
 //   res: Response,
 //   next: NextFunction
