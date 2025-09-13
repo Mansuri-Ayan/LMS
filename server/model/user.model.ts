@@ -5,6 +5,9 @@ import { Document, Model, Schema, model } from "mongoose";
 
 const emailRegrexPattern: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export interface IUser extends Document {
+  googleId: string;
+  githubId: string;
+  facebookId: string;
   email: string;
   name: string;
   password: string;
@@ -21,6 +24,21 @@ export interface IUser extends Document {
 }
 const userSchema: Schema<IUser> = new Schema(
   {
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    }, // sparse to allow null/undefined values
+    githubId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    facebookId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     name: { type: String, required: [true, "Please Enter your name"] },
     email: {
       type: String,
@@ -34,7 +52,9 @@ const userSchema: Schema<IUser> = new Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function () {
+        return !this.googleId && !this.githubId && !this.facebookId;
+      },
       minLength: [6, "Password must be at least 6 characters"],
     },
     avatar: { public_id: String, url: String },

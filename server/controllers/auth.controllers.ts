@@ -12,7 +12,6 @@ import {
   sendToken,
 } from "../utils/jwt";
 import { redis } from "../utils/redis";
-import { getUserById } from "../services/user.services";
 
 interface IRegistrationbody {
   email: string;
@@ -214,6 +213,7 @@ export const updateAccessToken = async (
         expiresIn: "3d",
       }
     );
+    req.user = user;
     res.cookie("access_token", accessToken, accessTokenOtions);
     res.cookie("refresh_token", refereshToken, refereshTokenOtions);
     res.status(200).json({
@@ -225,16 +225,27 @@ export const updateAccessToken = async (
   }
 };
 
-export const getUserInfo = async (
+interface ISocialAuthBody {
+  email: string;
+  name: string;
+  avatar: string;
+}
+export const socialAuth = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    console.log(req.user);
-    const userId = req.user?._id as string;
-    getUserById(userId, res);
+    const { email, name, avatar } = req.body as ISocialAuthBody;
+    const user = await User.findOne({ email });
+    if (!user) {
+      const newUser = await User.create({ ...req.body });
+      sendToken(newUser, 200, res);
+    } else {
+      sendToken(user, 200, res);
+    }
   } catch (error: any) {
+    console.log(error);
     return next(new ErrorHandler(error.status, 400));
   }
 };
