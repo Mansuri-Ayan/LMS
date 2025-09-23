@@ -56,6 +56,7 @@ const userSchema: Schema<IUser> = new Schema(
         return !this.googleId && !this.githubId && !this.facebookId;
       },
       minLength: [6, "Password must be at least 6 characters"],
+      select: false,
     },
     avatar: { public_id: String, url: String },
     role: {

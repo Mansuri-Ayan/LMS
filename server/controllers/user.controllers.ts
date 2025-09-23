@@ -5,6 +5,7 @@ import { NextFunction, Request, Response } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
 import { getUserById } from "../services/user.services";
 import { redis } from "../utils/redis";
+import cloudinary from "cloudinary";
 
 export const getUserInfo = async (
   req: Request,
@@ -32,7 +33,7 @@ export const updateUserInfo = async (
   try {
     const { name, email } = req.body as IUpdateUserInfo;
     const userId = req.user?._id;
-    const user = await User.findById(userId).select("-password");
+    const user = await User.findById(userId);
 
     if (email && user) {
       const isExists = await User.findOne({ email });
@@ -46,9 +47,8 @@ export const updateUserInfo = async (
       user.name = name;
     }
 
-    await redis.set(userId as string, JSON.stringify(user));
-
     await user?.save();
+    await redis.set(userId as string, JSON.stringify(user));
 
     res.status(200).json({ success: true, user });
   } catch (error: any) {
@@ -71,7 +71,7 @@ export const changePassword = async (
 
     const userId = req.user?._id;
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select("+password");
     if (user?.password === undefined) {
       return next(
         new ErrorHandler(
@@ -85,6 +85,20 @@ export const changePassword = async (
       return next(new ErrorHandler("No User found", 400));
     }
 
+    if (!oldpassword || oldpassword === "") {
+      return next(new ErrorHandler("Enter Value for old password", 400));
+    }
+
+    if (!newPassword || newPassword === "") {
+      return next(new ErrorHandler("Enter Value for new password", 400));
+    }
+
+    if (oldpassword === newPassword) {
+      return next(
+        new ErrorHandler("New Password cannot be same as old password.", 400)
+      );
+    }
+
     const isMatch = await user.coparePassword(oldpassword);
 
     if (!isMatch) {
@@ -94,10 +108,65 @@ export const changePassword = async (
     user.password = newPassword;
 
     await user.save();
+    await redis.set(userId as string, JSON.stringify(user));
 
     res.status(200).json({ success: true, user });
-    
   } catch (error: any) {
+    console.log(error);
+    return next(new ErrorHandler(error.status, 400));
+  }
+};
+
+interface IAvatarUpdate {
+  avatar?: string;
+}
+export const updateProfileAvatar = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { avatar } = req.body as IAvatarUpdate;
+
+    if (!avatar) {
+      return next(new ErrorHandler("No Image is provided", 400));
+    }
+
+    const userId = req.user?._id;
+    const user = await User.findById(userId).select("+password");
+
+    if (!user) {
+      return next(new ErrorHandler("No User found", 400));
+    }
+
+    if (user.avatar.public_id) {
+      await cloudinary.v2.uploader.destroy(user.avatar.public_id);
+
+      const response = await cloudinary.v2.uploader.upload(avatar as string, {
+        folder: "wanderlust_DEV",
+        allowedFormat: ["png", "jpg", "jpeg"],
+      });
+
+      user.avatar = {
+        public_id: response.public_id,
+        url: response.secure_url,
+      };
+    } else {
+      const response = await cloudinary.v2.uploader.upload(avatar as string, {
+        folder: "wanderlust_DEV",
+        allowedFormat: ["png", "jpg", "jpeg"],
+      });
+
+      user.avatar = {
+        public_id: response.public_id,
+        url: response.secure_url,
+      };
+    }
+    await user.save();
+    await redis.set(userId as string, JSON.stringify(user));
+    res.status(200).json({ success: true, user });
+  } catch (error: any) {
+    console.log(error);
     return next(new ErrorHandler(error.status, 400));
   }
 };

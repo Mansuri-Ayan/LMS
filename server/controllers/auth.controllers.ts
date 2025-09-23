@@ -124,7 +124,7 @@ export const LoginUse = async (
       return next(new ErrorHandler("Please Enter Password.", 400));
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return next(new ErrorHandler("Invalid Email.", 400));
