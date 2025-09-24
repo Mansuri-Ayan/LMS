@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser";
 import { ErrorMiddleware } from "./middleware/error";
 import authRouter from "./routes/auth.route";
 import userRouter from "./routes/user.route";
+import courseRouter from "./routes/couse.route";
 
 app.use(express.json({ limit: "50mb" }));
 
@@ -26,6 +27,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use("/api/v1/", authRouter);
 app.use("/api/v1/", userRouter);
+app.use("/api/v1/", courseRouter);
 
 app.get("/", (req: Request, res: Response, next: NextFunction) => {
   return res.status(200).json("working");
