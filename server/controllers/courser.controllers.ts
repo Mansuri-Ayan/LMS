@@ -7,6 +7,8 @@ import cloudinary from "cloudinary";
 import { createCourse } from "../services/course.services";
 import { redis } from "../utils/redis";
 import mongoose from "mongoose";
+import ejs from "ejs";
+import path from "path";
 
 export const uploadCouse = async (
   req: Request,
@@ -63,7 +65,6 @@ export const editCourse = async (
         new: true,
       }
     );
-    console.log(course);
     res.status(201).json({ success: true, course });
   } catch (error: any) {
     console.log(error);
@@ -200,8 +201,53 @@ export const addAnswer = async (
     const { answer, courseId, contentId, questionId }: IAddAnswerData =
       req.body;
     if (!mongoose.isValidObjectId(contentId)) {
+      return next(new ErrorHandler("Invalid content Id", 400));
     }
-    return res.status(200).json({ success: true });
+    const course = await Course.findById(courseId);
+    const courseContent = await course?.courseData.find(
+      (item: any) => item.id.toString() === contentId.toString()
+    );
+    if (!courseContent) {
+      return next(new ErrorHandler("Invalid content Id", 400));
+    }
+    const question = courseContent.questions.find(
+      (item: any) => item.id.toString() === questionId.toString()
+    );
+    if (!question) {
+      return next(new ErrorHandler("Invalid question Id", 400));
+    }
+    const addAnswer: any = {
+      user: req.user,
+      answer,
+    };
+    question.questionReplies.push(addAnswer);
+    await course?.save();
+    if (req.user?.id === question.user.id) {
+      //create notification
+      // return res.status(200).json({rep:"you are questioniar"});
+      const data = {
+        name: question.user.name,
+        title: courseContent.tital,
+        url: "http://localhost:5000/",
+      };
+      const html: any = await ejs.renderFile(
+        path.join(__dirname, "../mail/question_replay.ejs"),
+        data
+      );
+      return res.status(200).send(html);
+    } else {
+      const data = {
+        name: question.user.name,
+        title: courseContent.tital,
+        url: "http://localhost:5000/",
+      };
+      const html: any = await ejs.renderFile(
+        path.join(__dirname, "../mail/question_replay.ejs"),
+        data
+      );
+      console.log(html);
+      return res.status(200).render(html);
+    }
   } catch (error: any) {
     console.log(error);
     return next(new ErrorHandler(error.status, 400));
