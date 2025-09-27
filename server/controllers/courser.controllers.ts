@@ -9,6 +9,7 @@ import { redis } from "../utils/redis";
 import mongoose from "mongoose";
 import ejs from "ejs";
 import path from "path";
+import senEmail from "../utils/sendMail";
 
 export const uploadCouse = async (
   req: Request,
@@ -31,7 +32,7 @@ export const uploadCouse = async (
     res.status(200).json({ success: true });
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -68,7 +69,7 @@ export const editCourse = async (
     res.status(201).json({ success: true, course });
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -93,7 +94,7 @@ export const getSingleCourse = async (
       return res.status(200).json({ success: true, course });
     }
   } catch (error: any) {
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -118,7 +119,7 @@ export const getAllCourse = async (
     }
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -143,7 +144,7 @@ export const getCourseByUser = async (
     return res.status(200).json({ success: true, content });
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -182,7 +183,7 @@ export const addQuestion = async (
     return res.status(200).json({ success: true, course });
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -222,20 +223,14 @@ export const addAnswer = async (
     };
     question.questionReplies.push(addAnswer);
     await course?.save();
-    if (req.user?.id === question.user.id) {
+    console.log("it's hitting here course");
+    console.log(req.user?.id);
+    console.log(question.user._id);
+    if (req.user?._id === question.user._id) {
       //create notification
-      // return res.status(200).json({rep:"you are questioniar"});
-      const data = {
-        name: question.user.name,
-        title: courseContent.tital,
-        url: "http://localhost:5000/",
-      };
-      const html: any = await ejs.renderFile(
-        path.join(__dirname, "../mail/question_replay.ejs"),
-        data
-      );
-      return res.status(200).send(html);
+      return res.status(200).json({rep:"you are questioniar"});
     } else {
+       console.log("it's hitting here in email");
       const data = {
         name: question.user.name,
         title: courseContent.tital,
@@ -245,12 +240,23 @@ export const addAnswer = async (
         path.join(__dirname, "../mail/question_replay.ejs"),
         data
       );
-      console.log(html);
-      return res.status(200).render(html);
+      try {
+        const MailData = {
+          email: question.user.email,
+          subject: "Question Reply",
+          template: "question_replay.ejs",
+          data,
+        };
+        senEmail(MailData);
+        console.log("Mail sended");
+        return res.status(200).json({ success: true, course });
+      } catch (error: any) {
+        return next(new ErrorHandler(error.message, 400));
+      }
     }
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 

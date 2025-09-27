@@ -17,7 +17,7 @@ export const getUserInfo = async (
     const userId = req.user?._id as string;
     getUserById(userId, res);
   } catch (error: any) {
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -53,7 +53,7 @@ export const updateUserInfo = async (
     res.status(200).json({ success: true, user });
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -113,7 +113,7 @@ export const changePassword = async (
     res.status(200).json({ success: true, user });
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -167,7 +167,7 @@ export const updateProfileAvatar = async (
     res.status(200).json({ success: true, user });
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -180,6 +180,6 @@ export const updateProfileAvatar = async (
 //   try {
 //   } catch (error: any) {
 
-//     return next(new ErrorHandler(error.status, 400));
+//     return next(new ErrorHandler(error.message, 400));
 //   }
 // };

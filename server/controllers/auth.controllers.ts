@@ -28,6 +28,9 @@ export const registrationUser = async (
   try {
     const { name, email, password } = req.body;
     console.log(name, email);
+    if (!email || email === "") {
+      return next(new ErrorHandler("No email is provided", 400));
+    }
     const isExists = await User.findOne({ email });
     if (isExists) {
       return next(new ErrorHandler("User already exits", 400));
@@ -138,7 +141,7 @@ export const LoginUse = async (
 
     sendToken(user, 200, res);
   } catch (error: any) {
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -169,7 +172,7 @@ export const LogoutUser = async (
       .status(200)
       .json({ success: true, message: "User Logout Successfull." });
   } catch (error: any) {
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -221,7 +224,7 @@ export const updateAccessToken = async (
       accessToken,
     });
   } catch (error: any) {
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -246,7 +249,7 @@ export const socialAuth = async (
     }
   } catch (error: any) {
     console.log(error);
-    return next(new ErrorHandler(error.status, 400));
+    return next(new ErrorHandler(error.message, 400));
   }
 };
 
@@ -259,6 +262,6 @@ export const socialAuth = async (
 //   try {
 //   } catch (error: any) {
 
-//     return next(new ErrorHandler(error.status, 400));
+//     return next(new ErrorHandler(error.message, 400));
 //   }
 // };

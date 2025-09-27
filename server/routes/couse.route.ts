@@ -28,6 +28,7 @@ courseRouter.post(
 courseRouter.get("/get-courses", wrapAsync(getAllCourse));
 
 courseRouter.put("/add-question", isAuthenticated, wrapAsync(addQuestion));
+
 courseRouter.put("/add-answer", isAuthenticated, wrapAsync(addAnswer));
 
 courseRouter.get(
